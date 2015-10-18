@@ -21,8 +21,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * A simple UDP implementation for Minecraft.
  *
  */
-//TODO Setup gradle.
-//TODO Add kryonet to gradle.
+//TODO Get stuff working.
 @Mod(name = UDP.NAME, modid = UDP.MODID, version = UDP.VERSION)
 public class UDP {
 

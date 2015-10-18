@@ -18,8 +18,8 @@ buildscript {
 apply plugin: 'forge'
 
 version = "1.0"
-group= "com.yourname.modid" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "modid"
+group= "net.gliby.minecraft" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "glibyudp"
 
 minecraft {
     version = "1.8-11.14.3.1450"
@@ -34,6 +34,7 @@ minecraft {
 }
 
 dependencies {
+	compile 'com.esotericsoftware:kryonet:2.22.0-RC1'
     // you may put jars on which you depend on in ./libs
     // or you may define them like so..
     //compile "some.group:artifact:version:classifier"
@@ -47,6 +48,10 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
+}
+
+jar {
+	from configurations.compile.collect { zipTree it}
 }
 
 processResources
