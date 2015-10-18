@@ -1,13 +1,17 @@
 package net.gliby.minecraft.udp;
 
+import java.io.IOException;
+
+import org.apache.logging.log4j.Logger;
+
 import net.minecraft.network.NetHandlerPlayServer;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToServerEvent;
@@ -18,29 +22,39 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
- * A simple UDP implementation for Minecraft.
+ * A simple TCP/UDP implementation for Minecraft.
  *
  */
-//TODO Get stuff working.
-@Mod(name = UDP.NAME, modid = UDP.MODID, version = UDP.VERSION)
-public class UDP {
+@Mod(name = AdditionalNetwork.NAME, modid = AdditionalNetwork.MODID, version = AdditionalNetwork.VERSION)
+public class AdditionalNetwork {
 
-	public static final String NAME = "Gliby's Network Addition";
-	public static final String MODID = "glibyudp";
+	public static final String NAME = "Gliby's Additional Network";
+	public static final String MODID = "glibysnetwork";
 	public static final String VERSION = "1.0";
 
 	@SidedProxy(serverSide = "net.gliby.minecraft.udp.ServerNetworkHandler", clientSide = "net.gliby.minecraft.udp.ClientNetworkHandler")
 	public static ServerNetworkHandler proxy;
 
 	@EventHandler
+	public void preInit(FMLPreInitializationEvent event) {
+		this.logger = event.getModLog();
+	}
+
+	@EventHandler
 	public void init(FMLInitializationEvent event) {
 		FMLCommonHandler.instance().bus().register(this);
 	}
 
+	//FIXME Duplicates on LAN.
 	@SideOnly(Side.CLIENT)
 	@SubscribeEvent
 	public void clientToServerEstablished(ClientConnectedToServerEvent clientConnectionEvent) {
-		proxy.connect(FMLClientHandler.instance().getClientPlayerEntity());
+		try {
+			proxy.connect(FMLClientHandler.instance().getClientPlayerEntity());
+		} catch (IOException e) {
+			getLogger().fatal(e);
+			e.printStackTrace();
+		}
 	}
 
 	@SideOnly(Side.CLIENT)
@@ -51,12 +65,28 @@ public class UDP {
 
 	@EventHandler
 	public void serverStart(FMLServerStartedEvent serverEvent) {
-		proxy.start();
+		try {
+			proxy.start(this);
+		} catch (IOException e) {
+			getLogger().fatal(e);
+			e.printStackTrace();
+		}
+	}
+
+	private Logger logger;
+
+	private Logger getLogger() {
+		return logger;
 	}
 
 	@SubscribeEvent
 	public void serverToClientEstablished(ServerConnectionFromClientEvent serverConnectionEvent) {
-		proxy.connect(((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
+		try {
+			proxy.connect(((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
+		} catch (IOException e) {
+			getLogger().fatal(e);
+			e.printStackTrace();
+		}
 	}
 
 	@SubscribeEvent
