@@ -13,9 +13,9 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 /**
  *
  */
-public class PacketAuthentication extends MinecraftPacket implements IMessageHandler<PacketAuthentication, IMessage> {
+public class PacketAuthentication extends MinecraftPacket {
 
-	private String key;
+	public String key;
 
 	public PacketAuthentication() {
 	}
@@ -32,17 +32,5 @@ public class PacketAuthentication extends MinecraftPacket implements IMessageHan
 	@Override
 	public void toBytes(ByteBuf buf) {
 		ByteBufUtils.writeUTF8String(buf, key);
-	}
-
-	@Override
-	public IMessage onMessage(final PacketAuthentication message, MessageContext ctx) {
-		Minecraft.getMinecraft().addScheduledTask(new Runnable() {
-
-			@Override
-			public void run() {
-				
-			}
-		});
-		return null;
 	}
 }

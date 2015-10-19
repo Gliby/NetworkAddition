@@ -13,9 +13,11 @@ public class PlayerConnection extends Connection {
 		return gameProfile;
 	}
 
-	private EntityPlayer player;
+	public boolean isValid() {
+		return gameProfile != null;
+	}
 
-	public EntityPlayer getPlayer() {
-		return player;
+	public void validate(GameProfile profile) {
+		this.gameProfile = profile;
 	}
 }
