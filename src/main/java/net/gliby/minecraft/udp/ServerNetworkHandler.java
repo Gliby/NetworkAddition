@@ -8,6 +8,8 @@ import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraftforge.fml.common.network.handshake.NetworkDispatcher;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
 public class ServerNetworkHandler implements ISidedNetworkHandler {
 
@@ -15,13 +17,13 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	public int getTCPPort() {
 		return 25568;
 	}
-	
+
 	public int getUDPPort() {
 		return 25567;
 	}
 
 	@Override
-	public void connect(EntityPlayer player) throws IOException {
+	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player) throws IOException {
 
 	}
 
@@ -50,7 +52,8 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		});
 		server.bind(getTCPPort(), getUDPPort());
 		server.start();
-		
+		additionalNetwork.getLogger().info("Started: " + server);
+
 	}
 
 	public void register(EndPoint point) {

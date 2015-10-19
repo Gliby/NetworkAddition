@@ -2,11 +2,8 @@ package net.gliby.minecraft.udp;
 
 import java.io.IOException;
 
-import com.esotericsoftware.kryonet.Client;
-import com.esotericsoftware.kryonet.Connection;
-import com.esotericsoftware.kryonet.Listener;
-
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
 public class ClientNetworkHandler extends ServerNetworkHandler {
 
@@ -16,19 +13,16 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 	}
 
 	@Override
-	public void connect(EntityPlayer player) throws IOException {
-		System.out.println("Connected: " + player);
-		final Client client = new Client();
-		client.addListener(new Listener() {
-
-			@Override
-			public void connected(Connection connection) {
-				client.sendTCP("Hey there!");
-			}
-
-		});
-		client.start();
-		client.connect(5000, getHost(), this.getTCPPort(), this.getUDPPort());
+	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player) throws IOException {
+		/*
+		 * final Client client = new Client(); client.addListener(new Listener()
+		 * {
+		 * 
+		 * @Override public void connected(Connection connection) { }
+		 * 
+		 * }); client.start(); client.connect(5000, getHost(),
+		 * this.getTCPPort(), this.getUDPPort());
+		 */
 	}
 
 	@Override

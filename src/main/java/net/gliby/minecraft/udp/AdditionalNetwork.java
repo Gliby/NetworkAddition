@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import org.apache.logging.log4j.Logger;
 
+import net.gliby.minecraft.udp.packets.PacketAuthentication;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -18,6 +20,8 @@ import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToSe
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ServerConnectionFromClientEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ServerDisconnectionFromClientEvent;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -38,6 +42,7 @@ public class AdditionalNetwork {
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		this.logger = event.getModLog();
+		registerPacket(PacketAuthentication.class, PacketAuthentication.class, Side.CLIENT);
 	}
 
 	@EventHandler
@@ -45,22 +50,40 @@ public class AdditionalNetwork {
 		FMLCommonHandler.instance().bus().register(this);
 	}
 
-	//FIXME Duplicates on LAN.
+	private static final SimpleNetworkWrapper DISPATCHER = NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
+
+	/**
+	 * @return the dispatcher
+	 */
+	public static SimpleNetworkWrapper getDispatcher() {
+		return DISPATCHER;
+	}
+
+	private static int packetIndex = 0;
+
+	public void registerPacket(Class handler, Class packet, Side side) {
+		getDispatcher().registerMessage(packet, handler, packetIndex++, side);
+	}
+
 	@SideOnly(Side.CLIENT)
 	@SubscribeEvent
 	public void clientToServerEstablished(ClientConnectedToServerEvent clientConnectionEvent) {
-		try {
-			proxy.connect(FMLClientHandler.instance().getClientPlayerEntity());
+	/*	try {
+			EntityPlayer player = FMLClientHandler.instance().getClientPlayerEntity();
+			if (player != null)
+				proxy.connect(getDispatcher(), player);
 		} catch (IOException e) {
 			getLogger().fatal(e);
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	@SideOnly(Side.CLIENT)
 	@SubscribeEvent
 	public void clientToServerDestroyed(ClientDisconnectionFromServerEvent clientConnectionEvent) {
-		proxy.disconnect(FMLClientHandler.instance().getClientPlayerEntity());
+		EntityPlayer player = FMLClientHandler.instance().getClientPlayerEntity();
+		if (player != null)
+			proxy.disconnect(player);
 	}
 
 	@EventHandler
@@ -75,14 +98,14 @@ public class AdditionalNetwork {
 
 	private Logger logger;
 
-	private Logger getLogger() {
+	public Logger getLogger() {
 		return logger;
 	}
 
 	@SubscribeEvent
 	public void serverToClientEstablished(ServerConnectionFromClientEvent serverConnectionEvent) {
 		try {
-			proxy.connect(((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
+			proxy.connect(getDispatcher(), ((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
 		} catch (IOException e) {
 			getLogger().fatal(e);
 			e.printStackTrace();
