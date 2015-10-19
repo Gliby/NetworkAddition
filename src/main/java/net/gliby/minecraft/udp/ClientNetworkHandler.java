@@ -2,37 +2,17 @@ package net.gliby.minecraft.udp;
 
 import java.io.IOException;
 
-import org.apache.logging.log4j.core.net.UDPSocketServer;
+import com.esotericsoftware.kryonet.Client;
+import com.esotericsoftware.kryonet.Connection;
+import com.esotericsoftware.kryonet.Listener;
 
-import net.gliby.minecraft.udp.packets.PacketAuthentication;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraftforge.fml.client.FMLClientHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
-public class ClientNetworkHandler extends ServerNetworkHandler
-		implements IMessageHandler<PacketAuthentication, IMessage> {
+public class ClientNetworkHandler extends ServerNetworkHandler {
 
-	@Override
-	public IMessage onMessage(final PacketAuthentication message, MessageContext ctx) {
-		this.key = message.key;
-		Minecraft.getMinecraft().addScheduledTask(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					connect(AdditionalNetwork.getDispatcher(), FMLClientHandler.instance().getClientPlayerEntity());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-		return null;
-	}
-
-	public String key;
+	private IConnectionInformation connectionInformation;
+	private Client client;
 
 	// Temporary
 	public String getHost() {
@@ -40,21 +20,30 @@ public class ClientNetworkHandler extends ServerNetworkHandler
 	}
 
 	@Override
-	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player) throws IOException {
-		/*
-		 * final Client client = new Client(); client.addListener(new Listener()
-		 * {
-		 * 
-		 * @Override public void connected(Connection connection) { }
-		 * 
-		 * }); client.start(); client.connect(5000, getHost(),
-		 * this.getTCPPort(), this.getUDPPort());
-		 */
+	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player,
+			final IConnectionInformation connectionInformation) throws IOException {
+		this.connectionInformation = connectionInformation;
+		this.client = new Client();
+		client.start();
+		register(client);
+		client.addListener(new Listener() {
+			@Override
+			public void connected(Connection connection) {
+				InnerAuth auth = new InnerAuth(connectionInformation.getKey());
+				client.sendTCP(auth);
+			}
+		});
+		client.connect(5000, getHost(), connectionInformation.getTCP(), connectionInformation.getUDP());
 	}
 
 	@Override
 	public void disconnect(EntityPlayer player) {
-
+		client.stop();
+		try {
+			client.dispose();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

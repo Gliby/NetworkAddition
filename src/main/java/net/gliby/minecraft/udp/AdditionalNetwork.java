@@ -7,14 +7,18 @@ import org.apache.logging.log4j.Logger;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
+import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToServerEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent;
@@ -36,11 +40,15 @@ public class AdditionalNetwork {
 	public static final String MODID = "glibysnetwork";
 	public static final String VERSION = "1.0";
 
+	@Instance
+	public static AdditionalNetwork instance;
+
 	@SidedProxy(serverSide = "net.gliby.minecraft.udp.ServerNetworkHandler", clientSide = "net.gliby.minecraft.udp.ClientNetworkHandler")
 	public static ServerNetworkHandler proxy;
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
+		this.instance = this;
 		this.logger = event.getModLog();
 		registerPacket(PacketAuthentication.class, PacketAuthentication.class, Side.CLIENT);
 	}
@@ -68,14 +76,12 @@ public class AdditionalNetwork {
 	@SideOnly(Side.CLIENT)
 	@SubscribeEvent
 	public void clientToServerEstablished(ClientConnectedToServerEvent clientConnectionEvent) {
-	/*	try {
-			EntityPlayer player = FMLClientHandler.instance().getClientPlayerEntity();
-			if (player != null)
-				proxy.connect(getDispatcher(), player);
-		} catch (IOException e) {
-			getLogger().fatal(e);
-			e.printStackTrace();
-		}*/
+		/*
+		 * try { EntityPlayer player =
+		 * FMLClientHandler.instance().getClientPlayerEntity(); if (player !=
+		 * null) proxy.connect(getDispatcher(), player); } catch (IOException e)
+		 * { getLogger().fatal(e); e.printStackTrace(); }
+		 */
 	}
 
 	@SideOnly(Side.CLIENT)
@@ -96,6 +102,11 @@ public class AdditionalNetwork {
 		}
 	}
 
+	@EventHandler
+	public void serverStop(FMLServerStoppingEvent serverEvent) {
+		proxy.stop(this);
+	}
+
 	private Logger logger;
 
 	public Logger getLogger() {
@@ -103,17 +114,31 @@ public class AdditionalNetwork {
 	}
 
 	@SubscribeEvent
-	public void serverToClientEstablished(ServerConnectionFromClientEvent serverConnectionEvent) {
-		try {
-			proxy.connect(getDispatcher(), ((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
-		} catch (IOException e) {
-			getLogger().fatal(e);
-			e.printStackTrace();
-		}
+	public void serverToClientEstablished(final ServerConnectionFromClientEvent serverConnectionEvent) {
+		MinecraftServer.getServer().addScheduledTask(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					proxy.connect(getDispatcher(), ((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
+				} catch (IOException e) {
+					getLogger().fatal(e);
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 
 	@SubscribeEvent
 	public void serverToClientDestroyed(ServerDisconnectionFromClientEvent serverConnectionEvent) {
 		proxy.disconnect(((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
+	}
+
+	public ServerNetworkHandler getProxy() {
+		return proxy;
+	}
+
+	public static AdditionalNetwork getInstance() {
+		return instance;
 	}
 }

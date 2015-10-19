@@ -7,9 +7,11 @@ import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
 public interface ISidedNetworkHandler {
 
-	public void connect(SimpleNetworkWrapper networkDispatcher,  EntityPlayer player) throws IOException;
+	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player) throws IOException;
 
 	public void disconnect(EntityPlayer player);
 
+	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player,
+			IConnectionInformation connectionInformation) throws IOException;
 
 }

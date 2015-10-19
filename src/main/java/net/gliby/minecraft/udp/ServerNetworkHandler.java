@@ -37,7 +37,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		if (!authenticated.containsKey(player.getGameProfile())) {
 			String key = secureId.nextId();
 			awaitingAuthentication.put(player.getGameProfile(), key);
-			networkDispatcher.sendTo(new PacketAuthentication(key), (EntityPlayerMP) player);
+			networkDispatcher.sendTo(new PacketAuthentication(key, getTCPPort(), getUDPPort()), (EntityPlayerMP) player);
 		}
 	}
 
@@ -50,6 +50,15 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	SessionIdentifierGenerator secureId;
 	Server server;
 
+	public final void stop(AdditionalNetwork additionalNetwork) {
+		server.stop();
+		try {
+			server.dispose();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public final void start(AdditionalNetwork additionalNetwork) throws IOException {
 		secureId = new SessionIdentifierGenerator();
 		awaitingAuthentication = new HashMap<GameProfile, String>();
@@ -61,6 +70,8 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 				return new PlayerConnection();
 			}
 		};
+		register(server);
+
 		server.addListener(new Listener() {
 
 			@Override
@@ -70,14 +81,15 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 					InnerAuth auth = (InnerAuth) object;
 					BiMap<String, GameProfile> reversed = authenticated.inverse();
 					if (auth.key.length() == 32 && reversed.containsKey(auth.key)) {
+						System.out.println("Player validated");
 						playerConnection.validate(reversed.get(auth.key));
 					}
 				} else if (playerConnection.isValid()) {
 					if (object instanceof IMessage) {
 						IMessage mcPacket = (IMessage) object;
-						//TODO Add handler
+						// TODO Add handler
 					}
-					//TODO Add kryonet specific.
+					// TODO Add kryonet specific.
 				}
 			}
 		});
@@ -87,6 +99,11 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	}
 
 	public void register(EndPoint point) {
+		point.getKryo().register(InnerAuth.class);
+	}
+
+	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player,
+			IConnectionInformation connectionInformation) throws IOException {
 	}
 
 }
