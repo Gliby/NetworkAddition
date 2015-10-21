@@ -148,10 +148,8 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 			public void received(Connection connection, Object object) {
 				ServerPlayerConnection playerConnection = (ServerPlayerConnection) connection;
 				if (object instanceof InnerAuth && !playerConnection.isValid()) {
-					System.out.println("Auth rec");
 					InnerAuth auth = (InnerAuth) object;
 					IValidation validation;
-					System.out.println(auth.key);
 					if ((validation = authenticator.getValidation(auth.key)) != null) {
 						additionalNetwork.getLogger().info("Connection[" + connection.getID() + "] will be known as "
 								+ validation.getOwner().getName() + ".");
