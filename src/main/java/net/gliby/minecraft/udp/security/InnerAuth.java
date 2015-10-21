@@ -1,4 +1,4 @@
-package net.gliby.minecraft.udp;
+package net.gliby.minecraft.udp.security;
 
 public class InnerAuth {
 

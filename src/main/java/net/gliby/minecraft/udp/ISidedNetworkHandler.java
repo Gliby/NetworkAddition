@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import net.minecraftforge.fml.relauncher.Side;
 
 public interface ISidedNetworkHandler {
 
@@ -13,5 +14,7 @@ public interface ISidedNetworkHandler {
 
 	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player,
 			IConnectionInformation connectionInformation) throws IOException;
+
+	Side getSide();
 
 }

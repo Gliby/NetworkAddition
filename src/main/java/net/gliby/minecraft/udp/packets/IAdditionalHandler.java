@@ -1,4 +1,4 @@
-package net.gliby.minecraft.udp;
+package net.gliby.minecraft.udp.packets;
 
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.relauncher.Side;

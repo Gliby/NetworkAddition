@@ -1,4 +1,4 @@
-package net.gliby.minecraft.udp;
+package net.gliby.minecraft.udp.client;
 
 import java.io.IOException;
 
@@ -6,8 +6,12 @@ import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 
+import net.gliby.minecraft.udp.IConnectionInformation;
+import net.gliby.minecraft.udp.ServerNetworkHandler;
+import net.gliby.minecraft.udp.security.InnerAuth;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import net.minecraftforge.fml.relauncher.Side;
 
 public class ClientNetworkHandler extends ServerNetworkHandler {
 
@@ -23,9 +27,11 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player,
 			final IConnectionInformation connectionInformation) throws IOException {
 		this.connectionInformation = connectionInformation;
-		this.client = new Client();
+		this.client = new Client() {
+			
+		};
 		client.start();
-		registerObjects(client);
+		initializeNetwork(this, client);
 		client.addListener(new Listener() {
 			@Override
 			public void connected(Connection connection) {
@@ -38,12 +44,18 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 
 	@Override
 	public void disconnect(EntityPlayer player) {
+		client.close();
 		client.stop();
 		try {
 			client.dispose();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public Side getSide() {
+		return Side.CLIENT;
 	}
 
 }

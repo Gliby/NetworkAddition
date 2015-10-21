@@ -11,7 +11,12 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mojang.authlib.GameProfile;
 
+import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
+import net.gliby.minecraft.udp.packets.IAdditionalHandler;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
+import net.gliby.minecraft.udp.security.Authenticator;
+import net.gliby.minecraft.udp.security.InnerAuth;
+import net.gliby.minecraft.udp.security.Authenticator.IValidation;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.INetHandler;
@@ -23,32 +28,77 @@ import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
 //TODO Add security measures.
-//TODO Don't allow more than 1 auth per player(each time wrong, multiply deny time by 2, clamp at 5 minutes.)
+//TODO Don't allow more than 1 auth per player(each time wrong, multiply deny time by 1.2, clamp at 5 minutes.)
 
 public class ServerNetworkHandler implements ISidedNetworkHandler {
 
-	private BiMap<PlayerConnection, GameProfile> activeConnections;
+	protected void initializeNetwork(final ISidedNetworkHandler networkHandler, EndPoint point) {
+		point.getKryo().register(InnerAuth.class);
 
-	private BiMap<GameProfile, String> awaitingAuthentication;
-	private HashMap<GameProfile, String> authenticated;
+		packetHandlers = new HashMap<Object, IPacketHandler>();
+		point.addListener(new Listener() {
+
+			@Override
+			public void received(Connection c, Object obj) {
+				IPlayerConnection connection = null;
+				if (c instanceof IPlayerConnection) {
+					connection = (IPlayerConnection) c;
+					if (!connection.isValid()) {
+						return;
+					}
+				}
+
+				IPacketHandler handler;
+				if ((handler = packetHandlers.get(obj)) != null) {
+					handler.handle(networkHandler, connection, obj);
+				} else {
+					AdditionalNetwork.getInstance().getLogger().fatal("No packet handler found for: " + obj);
+				}
+			}
+		});
+	}
+
+	/**
+	 * Handles authentication.
+	 */
+	private Authenticator authenticator;
+	/**
+	 * Corresponding packet handlers to each object.
+	 */
+	private HashMap<Object, IPacketHandler> packetHandlers;
+
+	/**
+	 * All active connections.
+	 */
+	private BiMap<ServerPlayerConnection, GameProfile> activeConnections;
+
+	public Authenticator getAuthenticator() {
+		return authenticator;
+	}
+
+	public HashMap<Object, IPacketHandler> getPacketHandlers() {
+		return packetHandlers;
+	}
+
+	public BiMap<ServerPlayerConnection, GameProfile> getActiveConnections() {
+		return activeConnections;
+	}
 
 	// TODO Settings!
-	public int getTCPPort() {
+	private int getTCPPort() {
 		return 25568;
 	}
 
-	public int getUDPPort() {
+	private int getUDPPort() {
 		return 25567;
 	}
 
 	@Override
 	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player) throws IOException {
-		if (!authenticated.containsKey(player.getGameProfile())) {
-			String key = secureId.nextId(130, 32);
-			awaitingAuthentication.put(player.getGameProfile(), key);
+		String key;
+		if ((key = authenticator.getAuthenticationKey(player.getGameProfile())) != null)
 			networkDispatcher.sendTo(new PacketAuthentication(key, getTCPPort(), getUDPPort()),
 					(EntityPlayerMP) player);
-		}
 	}
 
 	@Override
@@ -57,15 +107,13 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	}
 
 	private void removeConnection(GameProfile profile, Connection connection) {
-		authenticated.remove(profile);
-		awaitingAuthentication.remove(profile);
+		authenticator.removeAuthentication(profile);
 		if (connection != null) {
 			activeConnections.remove(connection);
 			connection.close();
 		}
 	}
 
-	private SessionIdentifierGenerator secureId;
 	private Server server;
 
 	public final void stop(AdditionalNetwork additionalNetwork) {
@@ -78,52 +126,47 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	}
 
 	public final void start(final AdditionalNetwork additionalNetwork) throws IOException {
-		secureId = new SessionIdentifierGenerator();
-		authenticated = new HashMap<GameProfile, String>();
-		awaitingAuthentication = HashBiMap.create();
 		activeConnections = HashBiMap.create();
+		authenticator = new Authenticator();
 		server = new Server() {
 			@Override
 			protected Connection newConnection() {
 				// Provide our own custom Connection object.
-				return new PlayerConnection();
+				return new ServerPlayerConnection();
 			}
 		};
-		registerObjects(server);
-
+		initializeNetwork(this, server);
 		server.addListener(new Listener() {
 
 			@Override
+			public void connected(Connection connection) {
+				// TODO Accept/deny connection;
+			}
+
+			@Override
 			public void received(Connection connection, Object object) {
-				PlayerConnection playerConnection = (PlayerConnection) connection;
+				ServerPlayerConnection playerConnection = (ServerPlayerConnection) connection;
 				if (object instanceof InnerAuth && !playerConnection.isValid()) {
+					System.out.println("Auth rec");
 					InnerAuth auth = (InnerAuth) object;
-					System.out.println("auth begin: " + auth.key + ", size: " + auth.key.length());
-					BiMap<String, GameProfile> reversed = awaitingAuthentication.inverse();
-					GameProfile gameProfile;
-					if (auth.key.length() == 26 && (gameProfile = reversed.get(auth.key)) != null) {
-						System.out.println("Player validated");
-						additionalNetwork.getLogger().info(
-								"Connection[" + connection.getID() + "] will be known as " + gameProfile.getName() + ".");
-						playerConnection.validate(reversed.get(auth.key));
-						activeConnections.put(playerConnection, gameProfile);
+					IValidation validation;
+					System.out.println(auth.key);
+					if ((validation = authenticator.getValidation(auth.key)) != null) {
+						additionalNetwork.getLogger().info("Connection[" + connection.getID() + "] will be known as "
+								+ validation.getOwner().getName() + ".");
+						playerConnection.validate(validation);
+						activeConnections.put(playerConnection, validation.getOwner());
 					} else {
+						// TODO Actually implement...
 						connection.close();
-						//TODO Actually implement...
 						System.out.println("kick and block");
-					}
-				} else if (playerConnection.isValid()) {
-					if (object instanceof IMessage) {
-						handleMessagePacket(additionalNetwork, (IMessage) object, playerConnection);
-					} else {
-						handleKryo(object, playerConnection);
 					}
 				}
 			}
 
 			@Override
 			public void disconnected(Connection connection) {
-				PlayerConnection playerConnection = (PlayerConnection) connection;
+				ServerPlayerConnection playerConnection = (ServerPlayerConnection) connection;
 				removeConnection(playerConnection.getGameProfile(), playerConnection);
 			}
 		});
@@ -132,23 +175,23 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		additionalNetwork.getLogger().info("Started: " + server);
 	}
 
-	protected void handleKryo(Object object, PlayerConnection playerConnection) {
+	protected void handleKryo(Object object, ServerPlayerConnection playerConnection) {
 
 	}
 
 	protected void handleMessagePacket(AdditionalNetwork additonalNetwork, IMessage object,
-			PlayerConnection playerConnection) {
+			ServerPlayerConnection playerConnection) {
 		if (object instanceof IAdditionalHandler<?>) {
 			((IAdditionalHandler) object).handle(object, FMLCommonHandler.instance().getSide());
 		}
-	}
-
-	public void registerObjects(EndPoint point) {
-		point.getKryo().register(InnerAuth.class);
 	}
 
 	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player,
 			IConnectionInformation connectionInformation) throws IOException {
 	}
 
+	@Override
+	public Side getSide() {
+		return Side.SERVER;
+	}
 }
