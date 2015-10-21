@@ -7,6 +7,7 @@ import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.EndPoint;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
+import com.esotericsoftware.minlog.Log;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mojang.authlib.GameProfile;
@@ -32,9 +33,9 @@ import net.minecraftforge.fml.relauncher.Side;
 
 public class ServerNetworkHandler implements ISidedNetworkHandler {
 
-	protected void initializeNetwork(final ISidedNetworkHandler networkHandler, EndPoint point) {
+	protected void init(final ISidedNetworkHandler networkHandler, EndPoint point) {
+		Log.setLogger(new AnotherLogger(AdditionalNetwork.getInstance().getLogger()));
 		point.getKryo().register(InnerAuth.class);
-
 		packetHandlers = new HashMap<Object, IPacketHandler>();
 		point.addListener(new Listener() {
 
@@ -135,7 +136,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 				return new ServerPlayerConnection();
 			}
 		};
-		initializeNetwork(this, server);
+		init(this, server);
 		server.addListener(new Listener() {
 
 			@Override

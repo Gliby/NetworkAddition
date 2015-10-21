@@ -43,7 +43,7 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 
 		};
 		client.start();
-		initializeNetwork(this, client);
+		init(this, client);
 		client.addListener(new Listener() {
 			@Override
 			public void connected(Connection connection) {
