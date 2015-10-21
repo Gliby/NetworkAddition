@@ -25,7 +25,7 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 		this.connectionInformation = connectionInformation;
 		this.client = new Client();
 		client.start();
-		register(client);
+		registerObjects(client);
 		client.addListener(new Listener() {
 			@Override
 			public void connected(Connection connection) {

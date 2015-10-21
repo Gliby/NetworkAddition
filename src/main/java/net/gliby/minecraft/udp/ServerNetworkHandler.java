@@ -14,15 +14,21 @@ import com.mojang.authlib.GameProfile;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.INetHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import net.minecraftforge.fml.relauncher.Side;
 
-//TODO Add security mesaures, kick from server with client has authenticated,
+//TODO Add security measures.
 //TODO Don't allow more than 1 auth per player(each time wrong, multiply deny time by 2, clamp at 5 minutes.)
 
 public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 	private BiMap<PlayerConnection, GameProfile> activeConnections;
+
 	private BiMap<GameProfile, String> awaitingAuthentication;
 	private HashMap<GameProfile, String> authenticated;
 
@@ -47,17 +53,20 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 	@Override
 	public void disconnect(EntityPlayer player) {
-		authenticated.remove(player.getGameProfile());
-		awaitingAuthentication.remove(player.getGameProfile());
-		PlayerConnection connection = activeConnections.inverse().get(player.getGameProfile());
+		removeConnection(player.getGameProfile(), activeConnections.inverse().get(player.getGameProfile()));
+	}
+
+	private void removeConnection(GameProfile profile, Connection connection) {
+		authenticated.remove(profile);
+		awaitingAuthentication.remove(profile);
 		if (connection != null) {
-			connection.close();
 			activeConnections.remove(connection);
+			connection.close();
 		}
 	}
 
-	SessionIdentifierGenerator secureId;
-	Server server;
+	private SessionIdentifierGenerator secureId;
+	private Server server;
 
 	public final void stop(AdditionalNetwork additionalNetwork) {
 		server.stop();
@@ -68,7 +77,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		}
 	}
 
-	public final void start(AdditionalNetwork additionalNetwork) throws IOException {
+	public final void start(final AdditionalNetwork additionalNetwork) throws IOException {
 		secureId = new SessionIdentifierGenerator();
 		authenticated = new HashMap<GameProfile, String>();
 		awaitingAuthentication = HashBiMap.create();
@@ -80,14 +89,13 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 				return new PlayerConnection();
 			}
 		};
-		register(server);
+		registerObjects(server);
 
 		server.addListener(new Listener() {
 
 			@Override
 			public void received(Connection connection, Object object) {
 				PlayerConnection playerConnection = (PlayerConnection) connection;
-				System.out.println("listen: " + object);
 				if (object instanceof InnerAuth && !playerConnection.isValid()) {
 					InnerAuth auth = (InnerAuth) object;
 					System.out.println("auth begin: " + auth.key + ", size: " + auth.key.length());
@@ -95,25 +103,28 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 					GameProfile gameProfile;
 					if (auth.key.length() == 26 && (gameProfile = reversed.get(auth.key)) != null) {
 						System.out.println("Player validated");
+						additionalNetwork.getLogger().info(
+								"Connection[" + connection.getID() + "] will be known as " + gameProfile.getName() + ".");
 						playerConnection.validate(reversed.get(auth.key));
 						activeConnections.put(playerConnection, gameProfile);
 					} else {
 						connection.close();
+						//TODO Actually implement...
 						System.out.println("kick and block");
 					}
 				} else if (playerConnection.isValid()) {
 					if (object instanceof IMessage) {
-						IMessage mcPacket = (IMessage) object;
-						// TODO Add handler
+						handleMessagePacket(additionalNetwork, (IMessage) object, playerConnection);
+					} else {
+						handleKryo(object, playerConnection);
 					}
-					// TODO Add kryonet specific.
 				}
 			}
 
 			@Override
 			public void disconnected(Connection connection) {
 				PlayerConnection playerConnection = (PlayerConnection) connection;
-				activeConnections.remove(playerConnection.getGameProfile());
+				removeConnection(playerConnection.getGameProfile(), playerConnection);
 			}
 		});
 		server.bind(getTCPPort(), getUDPPort());
@@ -121,7 +132,18 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		additionalNetwork.getLogger().info("Started: " + server);
 	}
 
-	public void register(EndPoint point) {
+	protected void handleKryo(Object object, PlayerConnection playerConnection) {
+
+	}
+
+	protected void handleMessagePacket(AdditionalNetwork additonalNetwork, IMessage object,
+			PlayerConnection playerConnection) {
+		if (object instanceof IAdditionalHandler<?>) {
+			((IAdditionalHandler) object).handle(object, FMLCommonHandler.instance().getSide());
+		}
+	}
+
+	public void registerObjects(EndPoint point) {
 		point.getKryo().register(InnerAuth.class);
 	}
 
