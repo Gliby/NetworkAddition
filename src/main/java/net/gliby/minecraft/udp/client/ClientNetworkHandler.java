@@ -9,7 +9,12 @@ import com.esotericsoftware.kryonet.Listener;
 import net.gliby.minecraft.udp.IConnectionInformation;
 import net.gliby.minecraft.udp.ServerNetworkHandler;
 import net.gliby.minecraft.udp.security.InnerAuth;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ServerAddress;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraftforge.fml.client.FMLClientHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
@@ -19,8 +24,15 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 	private Client client;
 
 	// Temporary
-	public String getHost() {
-		return "localhost";
+	public String getHost(Minecraft minecraft) {
+		ServerData serverData;
+		String serverAddress;
+		if ((serverData = Minecraft.getMinecraft().getCurrentServerData()) != null) {
+			final ServerAddress server = ServerAddress.func_78860_a(serverData.serverIP);
+			serverAddress = server.getIP();
+		} else
+			serverAddress = "localhost";
+		return serverAddress;
 	}
 
 	@Override
@@ -28,7 +40,7 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 			final IConnectionInformation connectionInformation) throws IOException {
 		this.connectionInformation = connectionInformation;
 		this.client = new Client() {
-			
+
 		};
 		client.start();
 		initializeNetwork(this, client);
@@ -39,7 +51,11 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 				client.sendTCP(auth);
 			}
 		});
-		client.connect(5000, getHost(), connectionInformation.getTCP(), connectionInformation.getUDP());
+
+		System.out.println(
+				"Address: " + FMLClientHandler.instance().getClientToServerNetworkManager().getRemoteAddress());
+		client.connect(5000, getHost(Minecraft.getMinecraft()), connectionInformation.getTCP(),
+				connectionInformation.getUDP());
 	}
 
 	@Override

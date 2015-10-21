@@ -44,7 +44,7 @@ public class AdditionalNetwork {
 	@Instance
 	public static AdditionalNetwork instance;
 
-	@SidedProxy(serverSide = "net.gliby.minecraft.udp.ServerNetworkHandler", clientSide = "net.gliby.minecraft.udp.ClientNetworkHandler")
+	@SidedProxy(serverSide = "net.gliby.minecraft.udp.ServerNetworkHandler", clientSide = "net.gliby.minecraft.udp.client.ClientNetworkHandler")
 	public static ServerNetworkHandler proxy;
 
 	@EventHandler
