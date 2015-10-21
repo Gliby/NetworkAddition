@@ -11,7 +11,7 @@ public class SessionIdentifierGenerator {
 		this.random = new SecureRandom();
 	}
 
-	public String nextId() {
-		return new BigInteger(130, random).toString(32);
+	public String nextId(int bits, int maxLength) {
+		return new BigInteger(bits, random).toString(maxLength);
 	}
 }

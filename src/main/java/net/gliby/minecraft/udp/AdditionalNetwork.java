@@ -19,6 +19,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToServerEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent;
@@ -114,13 +115,13 @@ public class AdditionalNetwork {
 	}
 
 	@SubscribeEvent
-	public void serverToClientEstablished(final ServerConnectionFromClientEvent serverConnectionEvent) {
+	public void serverToClientEstablished(final PlayerLoggedInEvent serverConnectionEvent) {
 		MinecraftServer.getServer().addScheduledTask(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
-					proxy.connect(getDispatcher(), ((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
+					proxy.connect(getDispatcher(), serverConnectionEvent.player);
 				} catch (IOException e) {
 					getLogger().fatal(e);
 					e.printStackTrace();
