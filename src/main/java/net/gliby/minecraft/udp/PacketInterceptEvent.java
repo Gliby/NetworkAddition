@@ -8,6 +8,7 @@ import net.gliby.minecraft.udp.packets.MinecraftPacketWrapper;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+//Temporary tests.
 public class PacketInterceptEvent {
 
 	private ServerNetworkHandler networkHandler;

@@ -51,6 +51,7 @@ public class AdditionalNetwork {
 		this.instance = this;
 		this.logger = event.getModLog();
 		registerPacket(PacketAuthentication.class, PacketAuthentication.class, Side.CLIENT);
+		//TODO Make these register with Kyro properly.
 		proxy.getExternalPacketHandlers().put(PacketAuthentication.class, proxy.getClientDefaultPacketHandler());
 		proxy.getExternalPacketHandlers().put(MinecraftPacketWrapper.class, proxy.getClientDefaultPacketHandler());
 	}
