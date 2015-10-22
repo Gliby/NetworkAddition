@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
+import com.esotericsoftware.kryonet.EndPoint;
 import com.esotericsoftware.kryonet.Listener;
 import com.google.common.collect.BiMap;
 import com.mojang.authlib.GameProfile;
@@ -76,16 +77,6 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 	@Override
 	public Side getSide() {
 		return Side.CLIENT;
-	}
-
-	@Override
-	public BiMap<ServerPlayerConnection, GameProfile> getActiveConnections() {
-		try {
-			throw new Exception("Wrong side.");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 	private boolean authenticated;

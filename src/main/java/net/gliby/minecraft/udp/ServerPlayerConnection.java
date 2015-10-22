@@ -5,6 +5,7 @@ import com.mojang.authlib.GameProfile;
 
 import net.gliby.minecraft.udp.security.Authenticator.IValidation;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.INetHandler;
 
 public class ServerPlayerConnection extends Connection implements IPlayerConnection {
@@ -23,4 +24,5 @@ public class ServerPlayerConnection extends Connection implements IPlayerConnect
 	public void validate(IValidation validation) {
 		this.gameProfile = validation.getOwner();
 	}
+
 }

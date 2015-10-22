@@ -7,6 +7,6 @@ import net.minecraftforge.fml.relauncher.Side;
 
 public interface IAdditionalHandler<T> {
 
-	public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection, Object object);
+	public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection, T object);
 
 }

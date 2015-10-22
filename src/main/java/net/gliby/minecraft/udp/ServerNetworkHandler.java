@@ -14,7 +14,6 @@ import com.esotericsoftware.kryonet.Server;
 import com.esotericsoftware.minlog.Log;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.jcraft.jogg.Packet;
 import com.mojang.authlib.GameProfile;
 
 import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
@@ -25,8 +24,8 @@ import net.gliby.minecraft.udp.security.Authenticator.IValidation;
 import net.gliby.minecraft.udp.security.InnerAuth;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
@@ -66,7 +65,6 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 					}
 				}
 
-				System.out.println("rec: " + obj);
 				IPacketHandler handler;
 				if ((handler = packetHandlers.get(obj.getClass())) != null) {
 					if (handler.getSide() == getSide())
@@ -115,6 +113,14 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 	@Override
 	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player) throws IOException {
+		EntityPlayerMP mp = (EntityPlayerMP) player;
+		// HijackedNetPlayerHandler handler = (HijackedNetPlayerHandler)
+		// CloneHelper.cloneObject(mp.playerNetServerHandler,
+		// HijackedNetPlayerHandler.class);
+		mp.playerNetServerHandler = new HijackedNetPlayerHandler(MinecraftServer.getServer(),
+				mp.playerNetServerHandler.getNetworkManager(), mp);
+		((HijackedNetPlayerHandler) mp.playerNetServerHandler).bus().register(new PacketInterceptEvent(this));
+
 		String key;
 		if ((key = authenticator.getAuthenticationKey(player.getGameProfile())) != null)
 			networkDispatcher.sendTo(new PacketAuthentication(key, getTCPPort(), getUDPPort()),
@@ -248,6 +254,11 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 	public IPacketHandler getClientDefaultPacketHandler() {
 		return clientPacketHandler;
+	}
+
+	@Override
+	public void sendUDP(EntityPlayer player, Object object) {
+		server.sendToUDP(getActiveConnections().inverse().get(player.getGameProfile()).getID(), object);
 	}
 
 }
