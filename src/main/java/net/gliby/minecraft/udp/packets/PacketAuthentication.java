@@ -4,10 +4,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.Lister.Pack;
+
 import io.netty.buffer.ByteBuf;
 import net.gliby.minecraft.udp.AdditionalNetwork;
 import net.gliby.minecraft.udp.IConnectionInformation;
+import net.gliby.minecraft.udp.IPlayerConnection;
+import net.gliby.minecraft.udp.ISidedNetworkHandler;
 import net.gliby.minecraft.udp.ServerNetworkHandler;
+import net.gliby.minecraft.udp.client.ClientNetworkHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -18,7 +23,8 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 /**
  *
  */
-public class PacketAuthentication extends MinecraftPacket implements IMessageHandler<PacketAuthentication, IMessage> {
+public class PacketAuthentication extends MinecraftPacket
+		implements IMessageHandler<PacketAuthentication, IMessage>, IAdditionalHandler<PacketAuthentication> {
 
 	public String key;
 	public int udp, tcp;
@@ -88,5 +94,11 @@ public class PacketAuthentication extends MinecraftPacket implements IMessageHan
 		public String getKey() {
 			return key;
 		}
+	}
+
+	@Override
+	public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection, Object object) {
+		ClientNetworkHandler clientNetworkHandler = (ClientNetworkHandler) networkHandler;
+		clientNetworkHandler.setAuthenticated(true);
 	}
 }

@@ -49,7 +49,8 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 			for (Field field : entry.getClass().getDeclaredFields()) {
 				point.getKryo().register(field.getClass());
 			}
-			packetHandlers.put(entry.getKey(), entry.getValue());
+			if (entry.getValue().getSide() == getSide())
+				packetHandlers.put(entry.getKey(), entry.getValue());
 		}
 
 		point.addListener(new Listener() {
@@ -93,7 +94,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	 */
 	private BiMap<ServerPlayerConnection, GameProfile> activeConnections;
 
-	public Authenticator getAuthenticator() {
+	private Authenticator getAuthenticator() {
 		return authenticator;
 	}
 
@@ -171,6 +172,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 								+ validation.getOwner().getName() + ".");
 						playerConnection.validate(validation);
 						activeConnections.put(playerConnection, validation.getOwner());
+
 					} else {
 						// TODO Actually implement...
 						connection.close();
