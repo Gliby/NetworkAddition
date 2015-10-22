@@ -17,6 +17,7 @@ import com.google.common.collect.HashBiMap;
 import com.mojang.authlib.GameProfile;
 
 import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
+import net.gliby.minecraft.udp.packets.DataWatcherUpdate;
 import net.gliby.minecraft.udp.packets.IAdditionalHandler;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.gliby.minecraft.udp.security.Authenticator;
@@ -43,12 +44,15 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	protected void init(final ISidedNetworkHandler networkHandler, EndPoint point) {
 		Log.setLogger(new AnotherLogger(networkHandler.getLogger()));
 		point.getKryo().register(InnerAuth.class);
+		point.getKryo().register(byte[].class);
+		point.getKryo().register(DataWatcherUpdate.class);
 		packetHandlers = new HashMap<Class, IPacketHandler>();
 		for (Entry<Class, IPacketHandler> entry : externalPacketHandlers.entrySet()) {
 			point.getKryo().register(entry.getKey());
-			for (Field field : entry.getKey().getDeclaredFields()) {
-				point.getKryo().register(field.getClass());
-			}
+			/*
+			 * for (Field field : entry.getKey().getDeclaredFields()) {
+			 * point.getKryo().register(field.getClass()); }
+			 */
 			if (entry.getValue().getSide() == getSide())
 				packetHandlers.put(entry.getKey(), entry.getValue());
 		}
@@ -258,7 +262,9 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 	@Override
 	public void sendUDP(EntityPlayer player, Object object) {
-		server.sendToUDP(getActiveConnections().inverse().get(player.getGameProfile()).getID(), object);
+		IPlayerConnection connection = getActiveConnections().inverse().get(player.getGameProfile());
+		if (connection != null)
+			server.sendToUDP(getActiveConnections().inverse().get(player.getGameProfile()).getID(), object);
 	}
 
 }

@@ -12,6 +12,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ReportedException;
+import net.minecraftforge.fml.common.eventhandler.Cancelable;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.EventBus;
 
@@ -26,6 +27,7 @@ public class HijackedNetPlayerHandler extends NetHandlerPlayServer {
 			this.player = player;
 		}
 
+		@Cancelable
 		public static class Send extends PacketEvent {
 			public Packet packet;
 

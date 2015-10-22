@@ -28,7 +28,7 @@ public class PacketInterceptEvent {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			networkHandler.sendUDP(send.player, new DataWatcherUpdate(buffer));
+			networkHandler.sendUDP(send.player, new DataWatcherUpdate(buffer.array()));
 			send.setCanceled(true);
 		}
 	}

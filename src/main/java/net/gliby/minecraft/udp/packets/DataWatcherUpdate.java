@@ -5,6 +5,7 @@ import java.io.IOException;
 import javax.xml.crypto.Data;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.gliby.minecraft.udp.IPlayerConnection;
 import net.gliby.minecraft.udp.ISidedNetworkHandler;
 import net.minecraft.client.Minecraft;
@@ -13,9 +14,9 @@ import net.minecraft.network.play.server.S1CPacketEntityMetadata;
 
 public class DataWatcherUpdate implements IAdditionalHandler<DataWatcherUpdate> {
 
-	ByteBuf buffer;
+	byte[] buffer;
 
-	public DataWatcherUpdate(ByteBuf buf) {
+	public DataWatcherUpdate(byte[] buf) {
 		this.buffer = buf;
 	}
 
@@ -29,7 +30,7 @@ public class DataWatcherUpdate implements IAdditionalHandler<DataWatcherUpdate> 
 		Minecraft mc = Minecraft.getMinecraft();
 		S1CPacketEntityMetadata metadataPacket = new S1CPacketEntityMetadata();
 		try {
-			metadataPacket.readPacketData(new PacketBuffer(object.buffer));
+			metadataPacket.readPacketData(new PacketBuffer(Unpooled.copiedBuffer(object.buffer)));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
