@@ -66,7 +66,12 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 				IPacketHandler handler;
 				if ((handler = packetHandlers.get(obj)) != null) {
-					handler.handle(networkHandler, connection, obj);
+					if (handler.getSide() == getSide())
+						handler.handle(networkHandler, connection, obj);
+					else {
+						networkHandler.getLogger()
+								.error("Wrong side for packet handler: " + handler + "(" + obj + ").");
+					}
 				} else {
 					networkHandler.getLogger().debug("No packet handler found for: " + obj);
 				}
