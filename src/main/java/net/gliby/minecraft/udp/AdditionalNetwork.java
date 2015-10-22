@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.logging.log4j.Logger;
 
+import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -52,6 +53,8 @@ public class AdditionalNetwork {
 		this.instance = this;
 		this.logger = event.getModLog();
 		registerPacket(PacketAuthentication.class, PacketAuthentication.class, Side.CLIENT);
+		proxy.getExternalPacketHandlers().put(null, null);
+		
 	}
 
 	@EventHandler

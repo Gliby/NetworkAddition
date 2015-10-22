@@ -2,6 +2,8 @@ package net.gliby.minecraft.udp;
 
 import java.io.IOException;
 
+import org.apache.logging.log4j.Logger;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
@@ -17,4 +19,6 @@ public interface ISidedNetworkHandler {
 
 	Side getSide();
 
+	
+	Logger getLogger();
 }

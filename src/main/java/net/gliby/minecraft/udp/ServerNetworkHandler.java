@@ -1,7 +1,11 @@
 package net.gliby.minecraft.udp;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.Map.Entry;
+
+import org.apache.logging.log4j.Logger;
 
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.EndPoint;
@@ -16,15 +20,12 @@ import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
 import net.gliby.minecraft.udp.packets.IAdditionalHandler;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.gliby.minecraft.udp.security.Authenticator;
-import net.gliby.minecraft.udp.security.InnerAuth;
 import net.gliby.minecraft.udp.security.Authenticator.IValidation;
+import net.gliby.minecraft.udp.security.InnerAuth;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.INetHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
@@ -33,10 +34,24 @@ import net.minecraftforge.fml.relauncher.Side;
 
 public class ServerNetworkHandler implements ISidedNetworkHandler {
 
+	private HashMap<Object, IPacketHandler> externalPacketHandlers = new HashMap<Object, IPacketHandler>();
+
+	public HashMap<Object, IPacketHandler> getExternalPacketHandlers() {
+		return externalPacketHandlers;
+	}
+
 	protected void init(final ISidedNetworkHandler networkHandler, EndPoint point) {
-		Log.setLogger(new AnotherLogger(AdditionalNetwork.getInstance().getLogger()));
+		Log.setLogger(new AnotherLogger(networkHandler.getLogger()));
 		point.getKryo().register(InnerAuth.class);
 		packetHandlers = new HashMap<Object, IPacketHandler>();
+		for (Entry<Object, IPacketHandler> entry : externalPacketHandlers.entrySet()) {
+			point.getKryo().register(entry.getKey().getClass());
+			for (Field field : entry.getClass().getDeclaredFields()) {
+				point.getKryo().register(field.getClass());
+			}
+			packetHandlers.put(entry.getKey(), entry.getValue());
+		}
+
 		point.addListener(new Listener() {
 
 			@Override
@@ -53,7 +68,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 				if ((handler = packetHandlers.get(obj)) != null) {
 					handler.handle(networkHandler, connection, obj);
 				} else {
-					AdditionalNetwork.getInstance().getLogger().fatal("No packet handler found for: " + obj);
+					networkHandler.getLogger().debug("No packet handler found for: " + obj);
 				}
 			}
 		});
@@ -75,10 +90,6 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 	public Authenticator getAuthenticator() {
 		return authenticator;
-	}
-
-	public HashMap<Object, IPacketHandler> getPacketHandlers() {
-		return packetHandlers;
 	}
 
 	public BiMap<ServerPlayerConnection, GameProfile> getActiveConnections() {
@@ -176,17 +187,6 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		additionalNetwork.getLogger().info("Started: " + server);
 	}
 
-	protected void handleKryo(Object object, ServerPlayerConnection playerConnection) {
-
-	}
-
-	protected void handleMessagePacket(AdditionalNetwork additonalNetwork, IMessage object,
-			ServerPlayerConnection playerConnection) {
-		if (object instanceof IAdditionalHandler<?>) {
-			((IAdditionalHandler) object).handle(object, FMLCommonHandler.instance().getSide());
-		}
-	}
-
 	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player,
 			IConnectionInformation connectionInformation) throws IOException {
 	}
@@ -195,4 +195,52 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	public Side getSide() {
 		return Side.SERVER;
 	}
+
+	@Override
+	public Logger getLogger() {
+		return AdditionalNetwork.getInstance().getLogger();
+	}
+
+	private IPacketHandler serverPacketHandler = new IPacketHandler() {
+
+		@Override
+		public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection, Object object) {
+			if (object instanceof IAdditionalHandler<?>) {
+				((IAdditionalHandler) object).handle(networkHandler, playerConnection, object);
+			} else {
+				networkHandler.getLogger().fatal(IAdditionalHandler.class + " is not present.");
+			}
+		}
+
+		@Override
+		public Side getSide() {
+			return Side.SERVER;
+		}
+	};
+
+	private IPacketHandler clientPacketHandler = new IPacketHandler() {
+
+		@Override
+		public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection, Object object) {
+			if (object instanceof IAdditionalHandler<?>) {
+				((IAdditionalHandler) object).handle(networkHandler, playerConnection, object);
+			} else {
+				networkHandler.getLogger().fatal(IAdditionalHandler.class + " is not present.");
+			}
+		}
+
+		@Override
+		public Side getSide() {
+			return Side.CLIENT;
+		}
+	};
+
+	public IPacketHandler getServerPacketHandler() {
+		return serverPacketHandler;
+	}
+
+	public IPacketHandler getClientPacketHandler() {
+		return clientPacketHandler;
+	}
+
 }
