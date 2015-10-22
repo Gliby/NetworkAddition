@@ -4,9 +4,6 @@ import java.io.IOException;
 
 import org.apache.logging.log4j.Logger;
 
-import com.esotericsoftware.kryonet.EndPoint;
-
-import net.gliby.minecraft.udp.packets.DataWatcherUpdate;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;

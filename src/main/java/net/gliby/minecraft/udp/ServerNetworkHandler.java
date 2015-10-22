@@ -1,32 +1,102 @@
 package net.gliby.minecraft.udp;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.logging.log4j.Logger;
 
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.EndPoint;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
-import com.esotericsoftware.minlog.Log;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mojang.authlib.GameProfile;
 
+import io.netty.buffer.ByteBuf;
 import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
-import net.gliby.minecraft.udp.packets.DataWatcherUpdate;
 import net.gliby.minecraft.udp.packets.IAdditionalHandler;
+import net.gliby.minecraft.udp.packets.MinecraftPacketWrapper;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.gliby.minecraft.udp.security.Authenticator;
 import net.gliby.minecraft.udp.security.Authenticator.IValidation;
 import net.gliby.minecraft.udp.security.InnerAuth;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.play.server.S02PacketChat;
+//import net.minecraft.network.play.server.S03PacketTimeUpdate;
+//import net.minecraft.network.play.server.S04PacketEntityEquipment;
+import net.minecraft.network.play.server.S05PacketSpawnPosition;
+import net.minecraft.network.play.server.S06PacketUpdateHealth;
+import net.minecraft.network.play.server.S07PacketRespawn;
+import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.network.play.server.S09PacketHeldItemChange;
+import net.minecraft.network.play.server.S0APacketUseBed;
+import net.minecraft.network.play.server.S0BPacketAnimation;
+import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
+import net.minecraft.network.play.server.S0DPacketCollectItem;
+import net.minecraft.network.play.server.S0EPacketSpawnObject;
+import net.minecraft.network.play.server.S0FPacketSpawnMob;
+import net.minecraft.network.play.server.S10PacketSpawnPainting;
+import net.minecraft.network.play.server.S11PacketSpawnExperienceOrb;
+import net.minecraft.network.play.server.S12PacketEntityVelocity;
+import net.minecraft.network.play.server.S13PacketDestroyEntities;
+import net.minecraft.network.play.server.S14PacketEntity;
+import net.minecraft.network.play.server.S18PacketEntityTeleport;
+import net.minecraft.network.play.server.S19PacketEntityHeadLook;
+import net.minecraft.network.play.server.S19PacketEntityStatus;
+import net.minecraft.network.play.server.S1BPacketEntityAttach;
+//import net.minecraft.network.play.server.S1CPacketEntityMetadata;
+import net.minecraft.network.play.server.S1DPacketEntityEffect;
+import net.minecraft.network.play.server.S1EPacketRemoveEntityEffect;
+import net.minecraft.network.play.server.S1FPacketSetExperience;
+import net.minecraft.network.play.server.S20PacketEntityProperties;
+import net.minecraft.network.play.server.S21PacketChunkData;
+import net.minecraft.network.play.server.S22PacketMultiBlockChange;
+import net.minecraft.network.play.server.S23PacketBlockChange;
+import net.minecraft.network.play.server.S24PacketBlockAction;
+import net.minecraft.network.play.server.S25PacketBlockBreakAnim;
+import net.minecraft.network.play.server.S26PacketMapChunkBulk;
+import net.minecraft.network.play.server.S27PacketExplosion;
+import net.minecraft.network.play.server.S28PacketEffect;
+import net.minecraft.network.play.server.S29PacketSoundEffect;
+import net.minecraft.network.play.server.S2APacketParticles;
+import net.minecraft.network.play.server.S2BPacketChangeGameState;
+import net.minecraft.network.play.server.S2CPacketSpawnGlobalEntity;
+import net.minecraft.network.play.server.S2DPacketOpenWindow;
+import net.minecraft.network.play.server.S2EPacketCloseWindow;
+import net.minecraft.network.play.server.S2FPacketSetSlot;
+import net.minecraft.network.play.server.S30PacketWindowItems;
+import net.minecraft.network.play.server.S31PacketWindowProperty;
+import net.minecraft.network.play.server.S32PacketConfirmTransaction;
+import net.minecraft.network.play.server.S33PacketUpdateSign;
+import net.minecraft.network.play.server.S34PacketMaps;
+import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
+import net.minecraft.network.play.server.S36PacketSignEditorOpen;
+import net.minecraft.network.play.server.S37PacketStatistics;
+import net.minecraft.network.play.server.S38PacketPlayerListItem;
+import net.minecraft.network.play.server.S39PacketPlayerAbilities;
+import net.minecraft.network.play.server.S3APacketTabComplete;
+import net.minecraft.network.play.server.S3BPacketScoreboardObjective;
+import net.minecraft.network.play.server.S3CPacketUpdateScore;
+import net.minecraft.network.play.server.S3DPacketDisplayScoreboard;
+import net.minecraft.network.play.server.S3EPacketTeams;
+import net.minecraft.network.play.server.S3FPacketCustomPayload;
+import net.minecraft.network.play.server.S40PacketDisconnect;
+import net.minecraft.network.play.server.S41PacketServerDifficulty;
+import net.minecraft.network.play.server.S42PacketCombatEvent;
+import net.minecraft.network.play.server.S43PacketCamera;
+import net.minecraft.network.play.server.S44PacketWorldBorder;
+import net.minecraft.network.play.server.S45PacketTitle;
+import net.minecraft.network.play.server.S46PacketSetCompressionLevel;
+import net.minecraft.network.play.server.S47PacketPlayerListHeaderFooter;
+import net.minecraft.network.play.server.S48PacketResourcePackSend;
+import net.minecraft.network.play.server.S49PacketUpdateEntityNBT;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
@@ -41,14 +111,100 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		return externalPacketHandlers;
 	}
 
+	public static List<Class> transplants = new ArrayList<Class>();
+
+	{
+		transplants.add(S02PacketChat.class);
+//		transplants.add(S03PacketTimeUpdate.class);
+//		transplants.add(S04PacketEntityEquipment.class);
+		// transplants.add(S05PacketSpawnPosition.class);
+		transplants.add(S06PacketUpdateHealth.class);
+		// transplants.add(S07PacketRespawn.class);
+		transplants.add(S08PacketPlayerPosLook.class);
+		transplants.add(S09PacketHeldItemChange.class);
+		transplants.add(S0APacketUseBed.class);
+		transplants.add(S0BPacketAnimation.class);
+		transplants.add(S0CPacketSpawnPlayer.class);
+		transplants.add(S0DPacketCollectItem.class);
+		transplants.add(S0EPacketSpawnObject.class);
+		transplants.add(S0FPacketSpawnMob.class);
+		transplants.add(S10PacketSpawnPainting.class);
+		transplants.add(S11PacketSpawnExperienceOrb.class);
+//		transplants.add(S12PacketEntityVelocity.class);
+//		transplants.add(S13PacketDestroyEntities.class);
+//		transplants.add(S14PacketEntity.class);
+//		transplants.add(S14PacketEntity.S15PacketEntityRelMove.class);
+//		transplants.add(S14PacketEntity.S16PacketEntityLook.class);
+//		transplants.add(S14PacketEntity.S17PacketEntityLookMove.class);
+//		transplants.add(S18PacketEntityTeleport.class);
+//		transplants.add(S19PacketEntityHeadLook.class);
+//		transplants.add(S19PacketEntityStatus.class);
+		transplants.add(S1BPacketEntityAttach.class);
+		// transplants.add(S1CPacketEntityMetadata.class);
+//		transplants.add(S1DPacketEntityEffect.class);
+		transplants.add(S1EPacketRemoveEntityEffect.class);
+		transplants.add(S1FPacketSetExperience.class);
+		transplants.add(S20PacketEntityProperties.class);
+//		 transplants.add(S21PacketChunkData.class);
+		 transplants.add(S22PacketMultiBlockChange.class);
+		 transplants.add(S23PacketBlockChange.class);
+		// transplants.add(S24PacketBlockAction.class);
+		// transplants.add(S25PacketBlockBreakAnim.class);
+//		 transplants.add(S26PacketMapChunkBulk.class);
+		transplants.add(S27PacketExplosion.class);
+		transplants.add(S28PacketEffect.class);
+//		transplants.add(S29PacketSoundEffect.class);
+		transplants.add(S2APacketParticles.class);
+		transplants.add(S2BPacketChangeGameState.class);
+		transplants.add(S2CPacketSpawnGlobalEntity.class);
+		transplants.add(S2DPacketOpenWindow.class);
+		transplants.add(S2EPacketCloseWindow.class);
+		transplants.add(S2FPacketSetSlot.class);
+		transplants.add(S30PacketWindowItems.class);
+		transplants.add(S31PacketWindowProperty.class);
+		transplants.add(S32PacketConfirmTransaction.class);
+		transplants.add(S33PacketUpdateSign.class);
+		transplants.add(S34PacketMaps.class);
+		transplants.add(S35PacketUpdateTileEntity.class);
+		transplants.add(S36PacketSignEditorOpen.class);
+		transplants.add(S37PacketStatistics.class);
+		transplants.add(S38PacketPlayerListItem.class);
+		transplants.add(S39PacketPlayerAbilities.class);
+		transplants.add(S3APacketTabComplete.class);
+		transplants.add(S3BPacketScoreboardObjective.class);
+		transplants.add(S3CPacketUpdateScore.class);
+		transplants.add(S3DPacketDisplayScoreboard.class);
+		transplants.add(S3EPacketTeams.class);
+		// transplants.add(S3FPacketCustomPayload.class);
+		// transplants.add(S40PacketDisconnect.class);
+		transplants.add(S41PacketServerDifficulty.class);
+		transplants.add(S42PacketCombatEvent.class);
+		transplants.add(S43PacketCamera.class);
+		transplants.add(S44PacketWorldBorder.class);
+		// transplants.add(S45PacketTitle.class);
+		// transplants.add(S46PacketSetCompressionLevel.class);
+		// transplants.add(S47PacketPlayerListHeaderFooter.class);
+		// transplants.add(S48PacketResourcePackSend.class);
+		// transplants.add(S49PacketUpdateEntityNBT.class);
+
+	}
+
 	protected void init(final ISidedNetworkHandler networkHandler, EndPoint point) {
-		Log.setLogger(new AnotherLogger(networkHandler.getLogger()));
+
+		// Log.setLogger(new AnotherLogger(networkHandler.getLogger()));
+		point.getKryo().register(PacketAuthentication.class);
+		point.getKryo().register(MinecraftPacketWrapper.class);
 		point.getKryo().register(InnerAuth.class);
 		point.getKryo().register(byte[].class);
-		point.getKryo().register(DataWatcherUpdate.class);
+		point.getKryo().register(Class.class);
+		point.getKryo().register(ByteBuf.class);
+		for (Class clazz : transplants) {
+			point.getKryo().register(clazz);
+		}
+
 		packetHandlers = new HashMap<Class, IPacketHandler>();
 		for (Entry<Class, IPacketHandler> entry : externalPacketHandlers.entrySet()) {
-			point.getKryo().register(entry.getKey());
+			// point.getKryo().register(entry.getKey());
 			/*
 			 * for (Field field : entry.getKey().getDeclaredFields()) {
 			 * point.getKryo().register(field.getClass()); }
@@ -148,11 +304,6 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 
 	public final void stop(AdditionalNetwork additionalNetwork) {
 		server.stop();
-		try {
-			server.dispose();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public final void start(final AdditionalNetwork additionalNetwork) throws IOException {

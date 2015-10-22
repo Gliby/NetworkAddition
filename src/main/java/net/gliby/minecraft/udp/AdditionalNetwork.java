@@ -2,13 +2,9 @@ package net.gliby.minecraft.udp;
 
 import java.io.IOException;
 
-import javax.xml.crypto.Data;
-
 import org.apache.logging.log4j.Logger;
 
-import io.netty.channel.Channel;
-import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
-import net.gliby.minecraft.udp.packets.DataWatcherUpdate;
+import net.gliby.minecraft.udp.packets.MinecraftPacketWrapper;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -23,14 +19,11 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
-import net.minecraftforge.fml.common.eventhandler.Event.Result;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToServerEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent.ServerConnectionFromClientEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ServerDisconnectionFromClientEvent;
-import net.minecraftforge.fml.common.network.NetworkEventFiringHandler;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
@@ -59,7 +52,7 @@ public class AdditionalNetwork {
 		this.logger = event.getModLog();
 		registerPacket(PacketAuthentication.class, PacketAuthentication.class, Side.CLIENT);
 		proxy.getExternalPacketHandlers().put(PacketAuthentication.class, proxy.getClientDefaultPacketHandler());
-		proxy.getExternalPacketHandlers().put(DataWatcherUpdate.class, proxy.getClientDefaultPacketHandler());
+		proxy.getExternalPacketHandlers().put(MinecraftPacketWrapper.class, proxy.getClientDefaultPacketHandler());
 	}
 
 	@EventHandler
