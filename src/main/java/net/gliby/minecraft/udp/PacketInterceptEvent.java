@@ -10,15 +10,16 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class PacketInterceptEvent {
 
-	private ISidedNetworkHandler networkHandler;
+	private ServerNetworkHandler networkHandler;
 
-	public PacketInterceptEvent(ISidedNetworkHandler network) {
+	public PacketInterceptEvent(ServerNetworkHandler network) {
 		this.networkHandler = network;
 	}
 
 	@SubscribeEvent
 	public void event(PacketEvent.Send send) {
-		if (ServerNetworkHandler.transplants.contains(send.packet.getClass())) {
+		if (ServerNetworkHandler.transplants.contains(send.packet.getClass())
+				&& networkHandler.getActiveConnections().containsValue(send.player.getGameProfile())) {
 			PacketBuffer packetBuffer = new PacketBuffer(Unpooled.buffer());
 			try {
 				send.packet.writePacketData(packetBuffer);
@@ -28,8 +29,8 @@ public class PacketInterceptEvent {
 			MinecraftPacketWrapper wrapper = new MinecraftPacketWrapper();
 			wrapper.packet = send.packet.getClass();
 			wrapper.information = packetBuffer.array();
-			networkHandler.sendUDP(send.player, wrapper);
-			
+			networkHandler.sendUDP(send.player.getGameProfile(), wrapper);
+
 			send.setCanceled(true);
 		}
 	}

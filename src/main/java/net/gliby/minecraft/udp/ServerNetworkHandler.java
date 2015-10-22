@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 
 import org.apache.logging.log4j.Logger;
 
-import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.EndPoint;
 import com.esotericsoftware.kryonet.Listener;
@@ -28,11 +27,7 @@ import net.gliby.minecraft.udp.security.InnerAuth;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.S02PacketChat;
-//import net.minecraft.network.play.server.S03PacketTimeUpdate;
-//import net.minecraft.network.play.server.S04PacketEntityEquipment;
-import net.minecraft.network.play.server.S05PacketSpawnPosition;
 import net.minecraft.network.play.server.S06PacketUpdateHealth;
-import net.minecraft.network.play.server.S07PacketRespawn;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.network.play.server.S09PacketHeldItemChange;
 import net.minecraft.network.play.server.S0APacketUseBed;
@@ -43,27 +38,14 @@ import net.minecraft.network.play.server.S0EPacketSpawnObject;
 import net.minecraft.network.play.server.S0FPacketSpawnMob;
 import net.minecraft.network.play.server.S10PacketSpawnPainting;
 import net.minecraft.network.play.server.S11PacketSpawnExperienceOrb;
-import net.minecraft.network.play.server.S12PacketEntityVelocity;
-import net.minecraft.network.play.server.S13PacketDestroyEntities;
-import net.minecraft.network.play.server.S14PacketEntity;
-import net.minecraft.network.play.server.S18PacketEntityTeleport;
-import net.minecraft.network.play.server.S19PacketEntityHeadLook;
-import net.minecraft.network.play.server.S19PacketEntityStatus;
 import net.minecraft.network.play.server.S1BPacketEntityAttach;
-//import net.minecraft.network.play.server.S1CPacketEntityMetadata;
-import net.minecraft.network.play.server.S1DPacketEntityEffect;
 import net.minecraft.network.play.server.S1EPacketRemoveEntityEffect;
 import net.minecraft.network.play.server.S1FPacketSetExperience;
 import net.minecraft.network.play.server.S20PacketEntityProperties;
-import net.minecraft.network.play.server.S21PacketChunkData;
 import net.minecraft.network.play.server.S22PacketMultiBlockChange;
 import net.minecraft.network.play.server.S23PacketBlockChange;
-import net.minecraft.network.play.server.S24PacketBlockAction;
-import net.minecraft.network.play.server.S25PacketBlockBreakAnim;
-import net.minecraft.network.play.server.S26PacketMapChunkBulk;
 import net.minecraft.network.play.server.S27PacketExplosion;
 import net.minecraft.network.play.server.S28PacketEffect;
-import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.network.play.server.S2APacketParticles;
 import net.minecraft.network.play.server.S2BPacketChangeGameState;
 import net.minecraft.network.play.server.S2CPacketSpawnGlobalEntity;
@@ -85,17 +67,10 @@ import net.minecraft.network.play.server.S3BPacketScoreboardObjective;
 import net.minecraft.network.play.server.S3CPacketUpdateScore;
 import net.minecraft.network.play.server.S3DPacketDisplayScoreboard;
 import net.minecraft.network.play.server.S3EPacketTeams;
-import net.minecraft.network.play.server.S3FPacketCustomPayload;
-import net.minecraft.network.play.server.S40PacketDisconnect;
 import net.minecraft.network.play.server.S41PacketServerDifficulty;
 import net.minecraft.network.play.server.S42PacketCombatEvent;
 import net.minecraft.network.play.server.S43PacketCamera;
 import net.minecraft.network.play.server.S44PacketWorldBorder;
-import net.minecraft.network.play.server.S45PacketTitle;
-import net.minecraft.network.play.server.S46PacketSetCompressionLevel;
-import net.minecraft.network.play.server.S47PacketPlayerListHeaderFooter;
-import net.minecraft.network.play.server.S48PacketResourcePackSend;
-import net.minecraft.network.play.server.S49PacketUpdateEntityNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
@@ -412,10 +387,10 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	}
 
 	@Override
-	public void sendUDP(EntityPlayer player, Object object) {
-		IPlayerConnection connection = getActiveConnections().inverse().get(player.getGameProfile());
+	public void sendUDP(GameProfile player, Object object) {
+		IPlayerConnection connection = getActiveConnections().inverse().get(player);
 		if (connection != null)
-			server.sendToUDP(getActiveConnections().inverse().get(player.getGameProfile()).getID(), object);
+			server.sendToUDP(getActiveConnections().inverse().get(player).getID(), object);
 	}
 
 }
