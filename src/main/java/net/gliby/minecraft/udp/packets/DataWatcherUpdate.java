@@ -25,17 +25,23 @@ public class DataWatcherUpdate implements IAdditionalHandler<DataWatcherUpdate> 
 
 	@Override
 	public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection,
-			DataWatcherUpdate object) {
+			final DataWatcherUpdate object) {
 		System.out.println("ey");
-		Minecraft mc = Minecraft.getMinecraft();
-		S1CPacketEntityMetadata metadataPacket = new S1CPacketEntityMetadata();
-		try {
-			metadataPacket.readPacketData(new PacketBuffer(Unpooled.copiedBuffer(object.buffer)));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		mc.getNetHandler().handleEntityMetadata(metadataPacket);
+		Minecraft.getMinecraft().addScheduledTask(new Runnable() {
 
+			@Override
+			public void run() {
+				Minecraft mc = Minecraft.getMinecraft();
+				S1CPacketEntityMetadata metadataPacket = new S1CPacketEntityMetadata();
+				try {
+					metadataPacket.readPacketData(new PacketBuffer(Unpooled.copiedBuffer(object.buffer)));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				mc.getNetHandler().handleEntityMetadata(metadataPacket);
+
+			}
+		});
 	}
 
 }
