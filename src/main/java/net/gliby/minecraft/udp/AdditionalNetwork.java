@@ -53,8 +53,8 @@ public class AdditionalNetwork {
 		this.instance = this;
 		this.logger = event.getModLog();
 		registerPacket(PacketAuthentication.class, PacketAuthentication.class, Side.CLIENT);
-		proxy.getExternalPacketHandlers().put(null, null);
-		
+		proxy.getExternalPacketHandlers().put(PacketAuthentication.class, proxy.getClientDefaultPacketHandler());
+
 	}
 
 	@EventHandler

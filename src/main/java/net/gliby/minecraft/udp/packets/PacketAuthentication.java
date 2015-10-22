@@ -99,6 +99,7 @@ public class PacketAuthentication extends MinecraftPacket
 	@Override
 	public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection, Object object) {
 		ClientNetworkHandler clientNetworkHandler = (ClientNetworkHandler) networkHandler;
+		System.out.println("Authed");
 		clientNetworkHandler.setAuthenticated(true);
 	}
 }

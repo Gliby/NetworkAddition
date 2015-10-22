@@ -14,6 +14,7 @@ import com.esotericsoftware.kryonet.Server;
 import com.esotericsoftware.minlog.Log;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.jcraft.jogg.Packet;
 import com.mojang.authlib.GameProfile;
 
 import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
@@ -34,19 +35,19 @@ import net.minecraftforge.fml.relauncher.Side;
 
 public class ServerNetworkHandler implements ISidedNetworkHandler {
 
-	private HashMap<Object, IPacketHandler> externalPacketHandlers = new HashMap<Object, IPacketHandler>();
+	private HashMap<Class, IPacketHandler> externalPacketHandlers = new HashMap<Class, IPacketHandler>();
 
-	public HashMap<Object, IPacketHandler> getExternalPacketHandlers() {
+	public HashMap<Class, IPacketHandler> getExternalPacketHandlers() {
 		return externalPacketHandlers;
 	}
 
 	protected void init(final ISidedNetworkHandler networkHandler, EndPoint point) {
 		Log.setLogger(new AnotherLogger(networkHandler.getLogger()));
 		point.getKryo().register(InnerAuth.class);
-		packetHandlers = new HashMap<Object, IPacketHandler>();
-		for (Entry<Object, IPacketHandler> entry : externalPacketHandlers.entrySet()) {
-			point.getKryo().register(entry.getKey().getClass());
-			for (Field field : entry.getClass().getDeclaredFields()) {
+		packetHandlers = new HashMap<Class, IPacketHandler>();
+		for (Entry<Class, IPacketHandler> entry : externalPacketHandlers.entrySet()) {
+			point.getKryo().register(entry.getKey());
+			for (Field field : entry.getKey().getDeclaredFields()) {
 				point.getKryo().register(field.getClass());
 			}
 			if (entry.getValue().getSide() == getSide())
@@ -65,8 +66,9 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 					}
 				}
 
+				System.out.println("rec: " + obj);
 				IPacketHandler handler;
-				if ((handler = packetHandlers.get(obj)) != null) {
+				if ((handler = packetHandlers.get(obj.getClass())) != null) {
 					if (handler.getSide() == getSide())
 						handler.handle(networkHandler, connection, obj);
 					else {
@@ -87,7 +89,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 	/**
 	 * Corresponding packet handlers to each object.
 	 */
-	private HashMap<Object, IPacketHandler> packetHandlers;
+	private HashMap<Class, IPacketHandler> packetHandlers;
 
 	/**
 	 * All active connections.
@@ -172,7 +174,7 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 								+ validation.getOwner().getName() + ".");
 						playerConnection.validate(validation);
 						activeConnections.put(playerConnection, validation.getOwner());
-
+						server.sendToTCP(connection.getID(), new PacketAuthentication());
 					} else {
 						// TODO Actually implement...
 						connection.close();
@@ -240,11 +242,11 @@ public class ServerNetworkHandler implements ISidedNetworkHandler {
 		}
 	};
 
-	public IPacketHandler getServerPacketHandler() {
+	public IPacketHandler getServerDefaultPacketHandler() {
 		return serverPacketHandler;
 	}
 
-	public IPacketHandler getClientPacketHandler() {
+	public IPacketHandler getClientDefaultPacketHandler() {
 		return clientPacketHandler;
 	}
 
