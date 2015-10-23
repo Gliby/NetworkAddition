@@ -99,9 +99,6 @@ public class ServerNetworkHandler extends SharedNetwork {
 
 	public void connect(SimpleNetworkWrapper networkDispatcher, EntityPlayer player) throws IOException {
 		EntityPlayerMP mp = (EntityPlayerMP) player;
-		// HijackedNetPlayerHandler handler = (HijackedNetPlayerHandler)
-		// CloneHelper.cloneObject(mp.playerNetServerHandler,
-		// HijackedNetPlayerHandler.class);
 		mp.playerNetServerHandler = new HijackedNetPlayerHandler(MinecraftServer.getServer(),
 				mp.playerNetServerHandler.getNetworkManager(), mp);
 		((HijackedNetPlayerHandler) mp.playerNetServerHandler).bus().register(new PacketInterceptEvent(this));
@@ -191,48 +188,6 @@ public class ServerNetworkHandler extends SharedNetwork {
 	@Override
 	public Logger getLogger() {
 		return AdditionalNetwork.getInstance().getLogger();
-	}
-
-	private IPacketHandler serverPacketHandler = new IPacketHandler() {
-
-		@Override
-		public void handle(SharedNetwork networkHandler, IPlayerConnection playerConnection, Object object) {
-			if (object instanceof IAdditionalHandler<?>) {
-				((IAdditionalHandler) object).handle(networkHandler, playerConnection, object);
-			} else {
-				networkHandler.getLogger().fatal(IAdditionalHandler.class + " is not present.");
-			}
-		}
-
-		@Override
-		public Side getSide() {
-			return Side.SERVER;
-		}
-	};
-
-	private IPacketHandler clientPacketHandler = new IPacketHandler() {
-
-		@Override
-		public void handle(SharedNetwork networkHandler, IPlayerConnection playerConnection, Object object) {
-			if (object instanceof IAdditionalHandler<?>) {
-				((IAdditionalHandler) object).handle(networkHandler, playerConnection, object);
-			} else {
-				networkHandler.getLogger().fatal(IAdditionalHandler.class + " is not present.");
-			}
-		}
-
-		@Override
-		public Side getSide() {
-			return Side.CLIENT;
-		}
-	};
-
-	public IPacketHandler getServerDefaultPacketHandler() {
-		return serverPacketHandler;
-	}
-
-	public IPacketHandler getClientDefaultPacketHandler() {
-		return clientPacketHandler;
 	}
 
 	@Override

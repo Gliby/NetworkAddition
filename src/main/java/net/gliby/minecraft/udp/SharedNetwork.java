@@ -12,12 +12,56 @@ import com.mojang.authlib.GameProfile;
 
 import io.netty.buffer.ByteBuf;
 import net.gliby.minecraft.udp.packethandlers.IPacketHandler;
+import net.gliby.minecraft.udp.packets.IAdditionalHandler;
 import net.gliby.minecraft.udp.packets.MinecraftPacketWrapper;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
 import net.gliby.minecraft.udp.security.InnerAuth;
+import net.minecraft.network.play.server.S1CPacketEntityMetadata;
 import net.minecraftforge.fml.relauncher.Side;
 
 public abstract class SharedNetwork {
+
+	private IPacketHandler serverPacketHandler = new IPacketHandler() {
+
+		@Override
+		public void handle(SharedNetwork networkHandler, IPlayerConnection playerConnection, Object object) {
+			if (object instanceof IAdditionalHandler<?>) {
+				((IAdditionalHandler) object).handle(networkHandler, playerConnection, object);
+			} else {
+				networkHandler.getLogger().fatal(IAdditionalHandler.class + " is not present.");
+			}
+		}
+
+		@Override
+		public Side getSide() {
+			return Side.SERVER;
+		}
+	};
+
+	private IPacketHandler clientPacketHandler = new IPacketHandler() {
+
+		@Override
+		public void handle(SharedNetwork networkHandler, IPlayerConnection playerConnection, Object object) {
+			if (object instanceof IAdditionalHandler<?>) {
+				((IAdditionalHandler) object).handle(networkHandler, playerConnection, object);
+			} else {
+				networkHandler.getLogger().fatal(IAdditionalHandler.class + " is not present.");
+			}
+		}
+
+		@Override
+		public Side getSide() {
+			return Side.CLIENT;
+		}
+	};
+
+	public IPacketHandler getServerDefaultPacketHandler() {
+		return serverPacketHandler;
+	}
+
+	public IPacketHandler getClientDefaultPacketHandler() {
+		return clientPacketHandler;
+	}
 
 	protected void init(final SharedNetwork network, EndPoint endPoint) {
 		endPoint.getKryo().register(PacketAuthentication.class);
@@ -25,9 +69,10 @@ public abstract class SharedNetwork {
 		endPoint.getKryo().register(InnerAuth.class);
 		endPoint.getKryo().register(byte[].class);
 		endPoint.getKryo().register(Class.class);
+		endPoint.getKryo().register(S1CPacketEntityMetadata.class);
 		endPoint.getKryo().register(ByteBuf.class);
 		final HashMap<Class, IPacketHandler> packetHandlers = new HashMap<Class, IPacketHandler>();
-
+		packetHandlers.put(MinecraftPacketWrapper.class, getClientDefaultPacketHandler());
 		endPoint.addListener(new Listener() {
 
 			@Override

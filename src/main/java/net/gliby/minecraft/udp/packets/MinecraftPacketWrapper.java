@@ -41,12 +41,9 @@ public class MinecraftPacketWrapper implements IAdditionalHandler<MinecraftPacke
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					System.out.println("Proccesed: " + object.packet);
 					packet.processPacket(mc.getNetHandler());
 				}
 			});
-		} else {
-			System.out.println("Shit's whack yo");
 		}
 
 	}
