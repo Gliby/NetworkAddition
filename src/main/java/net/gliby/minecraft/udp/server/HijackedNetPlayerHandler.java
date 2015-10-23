@@ -1,4 +1,4 @@
-package net.gliby.minecraft.udp;
+package net.gliby.minecraft.udp.server;
 
 import java.util.concurrent.Callable;
 

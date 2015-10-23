@@ -10,9 +10,9 @@ import io.netty.buffer.ByteBuf;
 import net.gliby.minecraft.udp.AdditionalNetwork;
 import net.gliby.minecraft.udp.IConnectionInformation;
 import net.gliby.minecraft.udp.IPlayerConnection;
-import net.gliby.minecraft.udp.ISidedNetworkHandler;
-import net.gliby.minecraft.udp.ServerNetworkHandler;
+import net.gliby.minecraft.udp.SharedNetwork;
 import net.gliby.minecraft.udp.client.ClientNetworkHandler;
+import net.gliby.minecraft.udp.server.ServerNetworkHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -59,7 +59,7 @@ public class PacketAuthentication extends MinecraftPacket
 			public void run() {
 				try {
 					AdditionalNetwork ad = AdditionalNetwork.getInstance();
-					ad.getProxy().connect(AdditionalNetwork.getDispatcher(),
+					ad.createClientNetwork().connect(AdditionalNetwork.getDispatcher(),
 							FMLClientHandler.instance().getClientPlayerEntity(),
 							new ConnectionInformation(message.key, message.udp, message.tcp));
 				} catch (IOException e) {
@@ -97,7 +97,7 @@ public class PacketAuthentication extends MinecraftPacket
 	}
 
 	@Override
-	public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection, PacketAuthentication object) {
+	public void handle(SharedNetwork networkHandler, IPlayerConnection playerConnection, PacketAuthentication object) {
 		ClientNetworkHandler clientNetworkHandler = (ClientNetworkHandler) networkHandler;
 		System.out.println("Authed");
 		clientNetworkHandler.setAuthenticated(true);

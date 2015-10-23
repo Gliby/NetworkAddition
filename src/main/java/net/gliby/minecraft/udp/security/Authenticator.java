@@ -6,7 +6,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mojang.authlib.GameProfile;
 
-import net.gliby.minecraft.udp.SessionIdentifierGenerator;
+import net.gliby.minecraft.udp.server.SessionIdentifierGenerator;
 
 public class Authenticator {
 

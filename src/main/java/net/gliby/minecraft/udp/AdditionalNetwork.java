@@ -4,8 +4,10 @@ import java.io.IOException;
 
 import org.apache.logging.log4j.Logger;
 
+import net.gliby.minecraft.udp.client.ClientNetworkHandler;
 import net.gliby.minecraft.udp.packets.MinecraftPacketWrapper;
 import net.gliby.minecraft.udp.packets.PacketAuthentication;
+import net.gliby.minecraft.udp.server.ServerNetworkHandler;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.server.MinecraftServer;
@@ -43,22 +45,20 @@ public class AdditionalNetwork {
 	@Instance
 	public static AdditionalNetwork instance;
 
-	@SidedProxy(serverSide = "net.gliby.minecraft.udp.ServerNetworkHandler", clientSide = "net.gliby.minecraft.udp.client.ClientNetworkHandler")
-	public static ServerNetworkHandler proxy;
-
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		this.instance = this;
 		this.logger = event.getModLog();
 		registerPacket(PacketAuthentication.class, PacketAuthentication.class, Side.CLIENT);
-		//TODO Make these register with Kyro properly.
-		proxy.getExternalPacketHandlers().put(PacketAuthentication.class, proxy.getClientDefaultPacketHandler());
-		proxy.getExternalPacketHandlers().put(MinecraftPacketWrapper.class, proxy.getClientDefaultPacketHandler());
+		// TODO Make these register with Kyro properly.
+		// proxy.getExternalPacketHandlers().put(PacketAuthentication.class,
+		// proxy.getClientDefaultPacketHandler());
+		// proxy.getExternalPacketHandlers().put(MinecraftPacketWrapper.class,
+		// proxy.getClientDefaultPacketHandler());
 	}
 
 	@EventHandler
 	public void init(FMLInitializationEvent event) {
-		FMLCommonHandler.instance().bus().register(this);
 	}
 
 	private static final SimpleNetworkWrapper DISPATCHER = NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
@@ -76,29 +76,14 @@ public class AdditionalNetwork {
 		getDispatcher().registerMessage(packet, handler, packetIndex++, side);
 	}
 
-	@SideOnly(Side.CLIENT)
-	@SubscribeEvent
-	public void clientToServerEstablished(ClientConnectedToServerEvent clientConnectionEvent) {
-		/*
-		 * try { EntityPlayer player =
-		 * FMLClientHandler.instance().getClientPlayerEntity(); if (player !=
-		 * null) proxy.connect(getDispatcher(), player); } catch (IOException e)
-		 * { getLogger().fatal(e); e.printStackTrace(); }
-		 */
-	}
-
-	@SideOnly(Side.CLIENT)
-	@SubscribeEvent
-	public void clientToServerDestroyed(ClientDisconnectionFromServerEvent clientConnectionEvent) {
-		EntityPlayer player = FMLClientHandler.instance().getClientPlayerEntity();
-		if (player != null)
-			proxy.disconnect(player);
-	}
+	ServerNetworkHandler serverNetwork;
 
 	@EventHandler
 	public void serverStart(FMLServerStartedEvent serverEvent) {
+		serverNetwork = new ServerNetworkHandler();
+		FMLCommonHandler.instance().bus().register(serverNetwork);
 		try {
-			proxy.start(this);
+			serverNetwork.start(this);
 		} catch (IOException e) {
 			getLogger().fatal(e);
 			e.printStackTrace();
@@ -107,7 +92,8 @@ public class AdditionalNetwork {
 
 	@EventHandler
 	public void serverStop(FMLServerStoppingEvent serverEvent) {
-		proxy.stop(this);
+		FMLCommonHandler.instance().bus().unregister(serverNetwork);
+		serverNetwork.stop(this);
 	}
 
 	private Logger logger;
@@ -116,32 +102,17 @@ public class AdditionalNetwork {
 		return logger;
 	}
 
-	@SubscribeEvent
-	public void serverToClientEstablished(final PlayerLoggedInEvent serverConnectionEvent) {
-		MinecraftServer.getServer().addScheduledTask(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					proxy.connect(getDispatcher(), serverConnectionEvent.player);
-				} catch (IOException e) {
-					getLogger().fatal(e);
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
-	@SubscribeEvent
-	public void serverToClientDestroyed(ServerDisconnectionFromClientEvent serverConnectionEvent) {
-		proxy.disconnect(((NetHandlerPlayServer) serverConnectionEvent.handler).playerEntity);
-	}
-
-	public ServerNetworkHandler getProxy() {
-		return proxy;
-	}
-
 	public static AdditionalNetwork getInstance() {
 		return instance;
+	}
+
+	ClientNetworkHandler clientNetwork;
+
+	public ClientNetworkHandler createClientNetwork() {
+		if (clientNetwork != null) {
+			FMLCommonHandler.instance().bus().unregister(clientNetwork);
+		}
+		FMLCommonHandler.instance().bus().register(clientNetwork = new ClientNetworkHandler());
+		return clientNetwork;
 	}
 }

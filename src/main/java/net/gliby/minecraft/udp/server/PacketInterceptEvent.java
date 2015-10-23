@@ -1,10 +1,10 @@
-package net.gliby.minecraft.udp;
+package net.gliby.minecraft.udp.server;
 
 import java.io.IOException;
 
 import io.netty.buffer.Unpooled;
-import net.gliby.minecraft.udp.HijackedNetPlayerHandler.PacketEvent;
 import net.gliby.minecraft.udp.packets.MinecraftPacketWrapper;
+import net.gliby.minecraft.udp.server.HijackedNetPlayerHandler.PacketEvent;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -19,7 +19,7 @@ public class PacketInterceptEvent {
 
 	@SubscribeEvent
 	public void event(PacketEvent.Send send) {
-		if (ServerNetworkHandler.transplants.contains(send.packet.getClass())
+/*		if (ServerNetworkHandler.transplants.contains(send.packet.getClass())
 				&& networkHandler.getActiveConnections().containsValue(send.player.getGameProfile())) {
 			PacketBuffer packetBuffer = new PacketBuffer(Unpooled.buffer());
 			try {
@@ -34,5 +34,5 @@ public class PacketInterceptEvent {
 
 			send.setCanceled(true);
 		}
-	}
+*/	}
 }

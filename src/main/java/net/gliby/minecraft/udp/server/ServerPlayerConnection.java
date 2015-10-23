@@ -1,8 +1,9 @@
-package net.gliby.minecraft.udp;
+package net.gliby.minecraft.udp.server;
 
 import com.esotericsoftware.kryonet.Connection;
 import com.mojang.authlib.GameProfile;
 
+import net.gliby.minecraft.udp.IPlayerConnection;
 import net.gliby.minecraft.udp.security.Authenticator.IValidation;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;

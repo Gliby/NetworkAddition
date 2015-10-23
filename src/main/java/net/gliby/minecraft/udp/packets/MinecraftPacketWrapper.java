@@ -6,7 +6,7 @@ import com.ibm.icu.util.TimeZone.SystemTimeZoneType;
 
 import io.netty.buffer.Unpooled;
 import net.gliby.minecraft.udp.IPlayerConnection;
-import net.gliby.minecraft.udp.ISidedNetworkHandler;
+import net.gliby.minecraft.udp.SharedNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
@@ -20,7 +20,7 @@ public class MinecraftPacketWrapper implements IAdditionalHandler<MinecraftPacke
 	}
 
 	@Override
-	public void handle(ISidedNetworkHandler networkHandler, IPlayerConnection playerConnection,
+	public void handle(SharedNetwork networkHandler, IPlayerConnection playerConnection,
 			final MinecraftPacketWrapper object) {
 		final Minecraft mc = Minecraft.getMinecraft();
 		if (object.packet != null) {
